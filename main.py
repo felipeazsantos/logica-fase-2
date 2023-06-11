@@ -1,4 +1,5 @@
 import string
+import matplotlib.pyplot as plt
 
 
 def __main__():
@@ -28,9 +29,10 @@ def __main__():
     print()
     print(f"Mês e ano mais chuvoso de todo o período (1961 a 2016): {higherVolumeRainMonthAndYear}")
 
-    # Mostra a média da temperatura mínima do mês escolhido pelo usuário dos últimos 11 anos
+    # Mostra a média da temperatura mínima do mês escolhido pelo usuário dos últimos 11 anos (texto e gráfico)
     print()
     showMinTemperatureLast11Years(minTemperatureListLast11Years, minTemperatureMonth)
+
 
 def userInput():
     initialMonth = input("Digite o mês inicial (1 a 12) que deseja visualizar os dados meteorológicos: ")
@@ -45,9 +47,12 @@ def userInput():
     while not monthValidate(finalMonth):
         finalMonth = input("Digite o mês final (1 a 12) que deseja visualizar os dados meteorológicos: ")
 
-    finalYear = input("Digite o ano final (até de 2016) que deseja visualizar os dados meteorológicos: ")
-    while not yearValidate(finalYear) and not validateInitialYearAndFinalYear(initialYear, finalYear):
-        finalYear = input("Digite o ano final (até de 2016) que deseja visualizar os dados meteorológicos: ")
+    finalYear = input("Digite o ano final (até 2016) que deseja visualizar os dados meteorológicos: ")
+    while not yearValidate(finalYear):
+        finalYear = input("Digite o ano final (até 2016) que deseja visualizar os dados meteorológicos: ")
+
+    while not validateInitialYearAndFinalYear(initialMonth, initialYear, finalMonth, finalYear):
+        finalYear = input("Digite o ano final (até 2016) que deseja visualizar os dados meteorológicos: ")
 
     return int(initialMonth), int(initialYear), int(finalMonth), int(finalYear)
 
@@ -81,8 +86,18 @@ def yearValidate(yearValue):
     else:
         return False
 
-def validateInitialYearAndFinalYear(initialYear, finalYear):
-    return initialYear < finalYear
+def validateInitialYearAndFinalYear(initialMonth, initialYear, finalMonth, finalYear):
+    # Se o ano for igual o mês inicial não pode ser menor que o mês final
+    if initialYear == finalYear:
+        if initialMonth > finalMonth:
+            return False
+        else:
+            return True
+    # Se o ano inicial for menor que o ano final está ok
+    elif initialYear < finalYear:
+        return True
+    else:
+        return False
 
 
 def isNumber(valueCheck):
@@ -200,14 +215,28 @@ def choiceShowOption():
 # Funções para calcular e mostrar a média da temperatura mínima do mês escolhido pelo usuário dos últimos 11 anos
 
 def showMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth):
+    listData = []
+    listAvgMinTemps = []
+
+    # Calcula a média de temperatura mínima por mês dos últimos 11 anos
     listMinTemperatureCalculated = calcMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth)
+
     print("Data | Média Temperatura mínima ")
     for temperature in listMinTemperatureCalculated:
-        print(f"{temperature['month']}/{temperature['year']}     {temperature['avgMinTemp']:.2f}")
+        data = f"{temperature['month']}/{temperature['year']}"
+        avgMinTemperature = f"{temperature['avgMinTemp']:.2f}"
+        listData.append(data)
+        listAvgMinTemps.append(float(avgMinTemperature))
 
+        print(f"{data}     {avgMinTemperature}")
+
+    # Calcula o total a média de temperatura mínima por mês dos últimos 11 anos
     averageMinTemperatureLast11Years = calcTotalMinTemperatureLast11Years(listMinTemperatureCalculated)
     print()
     print(f"Média da temperatura mínima total do mês {minTemperatureMonth} dos últimos 11 anos: {averageMinTemperatureLast11Years:.2f}")
+
+    # Mostra o gráfico da média de temperatura mínima dos últimos 11 anos de acordo com ês escolhido pelo usuário
+    showGrapicBar(listData, listAvgMinTemps, minTemperatureMonth)
 
 def calcMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth):
     lastYear = 2006
@@ -242,6 +271,13 @@ def calcTotalMinTemperatureLast11Years(listMinTemperatureCalculated):
 
     return sumMinTemperature / countMinTemperature
 
+def showGrapicBar(listData, listAvgMinTemps, minTemperatureMonth):
+    listAvgMinTemps.sort()
+    plt.bar(listData, listAvgMinTemps)
+    plt.title(f"Média de temperatura mínima do mês {minTemperatureMonth} dos últimos 11 anos")
+    plt.xlabel("Data")
+    plt.ylabel("Temperatura")
+    plt.show()
 
 # Executa a função principal do programa
 __main__()
