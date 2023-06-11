@@ -2,11 +2,19 @@ import string
 
 
 def __main__():
-    filteredValues = archiveFilteredValues()
+    # Pergunta ao usuário o período que deseja visualizar os dados
+    initialMonth, initialYear, finalMonth, finalYear = userInput()
 
     # Pergunta ao usuário quais dados ele deseja ver
     print()
     option = choiceShowOption()
+
+    # Pergunta ao usuário o mês dos últimos 11 anos que ele deseja visualizar a média da temperatura mínima
+    print()
+    minTemperatureMonth = choicerMinTemperatureMonth()
+
+    # Retorna os valores filtrados e calculados para mostrar ao usuário
+    filteredValues, higherVolumeRainMonthAndYear, minTemperatureListLast11Years = archiveFilteredValues(initialMonth, initialYear, finalMonth, finalYear, minTemperatureMonth)
 
     # Coloca o cabeçalho da lista filtrada
     print()
@@ -16,6 +24,13 @@ def __main__():
     for line in filteredValues:
         showData(option, line)
 
+    # Mostra o mês e ano mais chuvoso do período inteiro (1961 a 2016)
+    print()
+    print(f"Mês e ano mais chuvoso de todo o período (1961 a 2016): {higherVolumeRainMonthAndYear}")
+
+    # Mostra a média da temperatura mínima do mês escolhido pelo usuário dos últimos 11 anos
+    print()
+    showMinTemperatureLast11Years(minTemperatureListLast11Years, minTemperatureMonth)
 
 def userInput():
     initialMonth = input("Digite o mês inicial (1 a 12) que deseja visualizar os dados meteorológicos: ")
@@ -36,6 +51,13 @@ def userInput():
 
     return int(initialMonth), int(initialYear), int(finalMonth), int(finalYear)
 
+
+def choicerMinTemperatureMonth():
+    month = input("Digite o número do mês (1 a 12) que você deseja visualizar a média da temperatura mínima: ")
+    while not monthValidate(month):
+        month = input("Digite o número do mês (1 a 12) que você deseja visualizar a média da temperatura mínima: ")
+
+    return month
 
 def monthValidate(monthValue):
     validValue = isNumber(monthValue)
@@ -64,6 +86,11 @@ def validateInitialYearAndFinalYear(initialYear, finalYear):
 
 
 def isNumber(valueCheck):
+    # Remove os espaços em branco para correta validação
+    valueCheck = valueCheck.strip()
+    if valueCheck == "":
+        return False
+
     for value in valueCheck:
         if value not in string.digits:
             return False
@@ -71,13 +98,12 @@ def isNumber(valueCheck):
     return True
 
 
-def archiveFilteredValues():
-    # Pergunta ao usuário o período que deseja visualizar os dados
-    initialMonth, initialYear, finalMonth, finalYear = userInput()
-
+def archiveFilteredValues(initialMonth, initialYear, finalMonth, finalYear, minTemperatureMonth):
     archive = open("OK_Anexo_Arquivo_Dados_Projeto.csv", "r")
     firstLine = True
     filteredValues = []
+    higherVolumeRain = {"volume": 0, "data": ""}
+    minTemperatureListLast11Years = []
     for line in archive:
         if firstLine:
             firstLine = False
@@ -95,9 +121,21 @@ def archiveFilteredValues():
         if (archiveYearMonth >= initialUserYearMonth) and (archiveYearMonth <= finalUserYearMonth):
             filteredValues.append(lineValue)
 
-    archive.close()
-    return filteredValues
+        # verifica o mês mais chuvoso
+        if verifyHigherVolumeRain(float(lineValue[1]), higherVolumeRain["volume"]):
+            higherVolumeRain["volume"] = float(lineValue[1])
+            higherVolumeRain["data"] = str(month) + "/" + str(year)
 
+        # Preenche a lista de mês com a menor temperatura dos últimos 11 anos escolhida pelo usuário
+        if (year >= 2006 and year <= 2016) and (month == int(minTemperatureMonth)):
+            minTemperatureListLast11Years.append({"year": year, "month": month, "temp": float(lineValue[3])})
+
+    return filteredValues, higherVolumeRain["data"], minTemperatureListLast11Years
+
+
+def verifyHigherVolumeRain(actualVolume, beforeVolume):
+    if actualVolume > beforeVolume:
+        return True
 
 def showData(option, line):
     data = line[0]
@@ -159,4 +197,51 @@ def choiceShowOption():
 
     return option
 
+# Funções para calcular e mostrar a média da temperatura mínima do mês escolhido pelo usuário dos últimos 11 anos
+
+def showMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth):
+    listMinTemperatureCalculated = calcMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth)
+    print("Data | Média Temperatura mínima ")
+    for temperature in listMinTemperatureCalculated:
+        print(f"{temperature['month']}/{temperature['year']}     {temperature['avgMinTemp']:.2f}")
+
+    averageMinTemperatureLast11Years = calcTotalMinTemperatureLast11Years(listMinTemperatureCalculated)
+    print()
+    print(f"Média da temperatura mínima total do mês {minTemperatureMonth} dos últimos 11 anos: {averageMinTemperatureLast11Years:.2f}")
+
+def calcMinTemperatureLast11Years(listMinTemperature, minTemperatureMonth):
+    lastYear = 2006
+    sumMinTemperature = 0
+    countMinTemperature = 0
+    listMinTemperatureCalculated = []
+
+    for temperature in listMinTemperature:
+        year = temperature["year"]
+
+        if year != 2016:
+            if year == lastYear:
+                sumMinTemperature += temperature["temp"]
+                countMinTemperature += 1
+            else:
+                listMinTemperatureCalculated.append({"year": lastYear, "month": minTemperatureMonth, "avgMinTemp": sumMinTemperature / countMinTemperature })
+
+        lastYear = temperature["year"]
+
+
+    # Adiciona o cálculo referente ao ano de 2016
+    listMinTemperatureCalculated.append({"year": 2016, "month": minTemperatureMonth, "avgMinTemp": sumMinTemperature / countMinTemperature})
+
+    return listMinTemperatureCalculated
+
+def calcTotalMinTemperatureLast11Years(listMinTemperatureCalculated):
+    sumMinTemperature = 0
+    countMinTemperature = 0
+    for temperature in listMinTemperatureCalculated:
+        countMinTemperature += 1
+        sumMinTemperature += temperature["avgMinTemp"]
+
+    return sumMinTemperature / countMinTemperature
+
+
+# Executa a função principal do programa
 __main__()
